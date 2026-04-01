@@ -1,16 +1,11 @@
-import 'dart:async';
-
-import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
-import 'package:flutter/painting.dart';
 
 import 'components/ball.dart';
+import 'components/ball_trail.dart';
 import 'components/paddle.dart';
-import 'components/brick.dart';
 import 'components/level.dart';
 import 'components/power_up.dart';
-import 'components/ball_trail.dart';
 import 'managers/audio_manager.dart';
 import 'config/game_config.dart' as config;
 import 'config/asset_paths.dart';
@@ -45,11 +40,21 @@ class PoesArkanoidGame extends FlameGame
   // Components (set during onLoad)
   // ------------------------------------------------------------------
   late Paddle paddle;
-  late Ball ball;
+  late BallTrail ballTrail;
   late Level currentLevel;
   late AudioManager audioManager;
 
+  /// All active balls (main + extras). Main ball is always first.
+  final List<Ball> balls = [];
+  Ball get mainBall => balls.first;
+
   final List<PowerUpItem> activePowerUps = [];
+
+  // ------------------------------------------------------------------
+  // Timing
+  // ------------------------------------------------------------------
+  double _gameTime = 0;
+  double _speedRampAccumulator = 0;
 
   // ------------------------------------------------------------------
   // Lifecycle
@@ -58,27 +63,35 @@ class PoesArkanoidGame extends FlameGame
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Pre-load all images
-    await images.loadAll(AssetPaths.allImages);
-
-    // Audio
     audioManager = AudioManager();
-    // TODO: preload audio files
 
-    // Add level (bricks + background)
+    // Load images and audio in parallel
+    await Future.wait([
+      images.loadAll(AssetPaths.allImages),
+      audioManager.preloadAll(),
+    ]);
+
+    // Add components
     currentLevel = Level(levelNumber: level);
-    await add(currentLevel);
+    add(currentLevel);
 
-    // Add paddle
     paddle = Paddle();
-    await add(paddle);
+    add(paddle);
 
-    // Add ball
-    ball = Ball();
-    await add(ball);
+    ballTrail = BallTrail();
+    add(ballTrail);
 
-    // Place ball on paddle
+    final ball = Ball();
+    balls.add(ball);
+    add(ball);
+
     ball.placeOnPaddle(paddle);
+  }
+
+  @override
+  void onRemove() {
+    audioManager.dispose();
+    super.onRemove();
   }
 
   // ------------------------------------------------------------------
@@ -90,30 +103,29 @@ class PoesArkanoidGame extends FlameGame
 
     if (inputMode != InputMode.playing) return;
 
+    _gameTime += dt;
+
+    // Speed ramp on accumulator
+    _speedRampAccumulator += dt;
+    if (_speedRampAccumulator >= config.speedIncreaseInterval) {
+      _speedRampAccumulator -= config.speedIncreaseInterval;
+      for (final b in balls) {
+        b.increaseSpeed(level);
+      }
+    }
+
     // Check brannas expiration
     if (brannasActive && _gameTime > brannasEndTime) {
       brannasActive = false;
     }
 
-    // Update active power-ups (falling items)
-    for (final pu in List.of(activePowerUps)) {
-      if (!pu.isMounted) {
-        activePowerUps.remove(pu);
-      }
-    }
+    // Clean up unmounted power-ups
+    activePowerUps.removeWhere((pu) => !pu.isMounted);
 
     // Check level complete
     if (currentLevel.isComplete) {
       _nextLevel();
     }
-  }
-
-  double _gameTime = 0;
-
-  @override
-  void onMount() {
-    super.onMount();
-    _gameTime = 0;
   }
 
   // ------------------------------------------------------------------
@@ -136,7 +148,7 @@ class PoesArkanoidGame extends FlameGame
   // ------------------------------------------------------------------
   void _startBall() {
     inputMode = InputMode.playing;
-    ball.launch();
+    mainBall.launch();
   }
 
   void addScore(int points) {
@@ -144,36 +156,53 @@ class PoesArkanoidGame extends FlameGame
   }
 
   void loseLife() {
+    if (inputMode == InputMode.gameOver) return;
     lives--;
+    _removeAllExtraBalls();
+    ballTrail.clear();
+    _clearActivePowerUps();
+    brannasActive = false;
+
     if (lives <= 0) {
       _gameOver();
       return;
     }
 
     audioManager.play('lifeloss');
-
-    // Reset ball onto paddle
-    ball.reset();
-    ball.placeOnPaddle(paddle);
+    mainBall.reset();
+    mainBall.placeOnPaddle(paddle);
+    paddle.resetSize();
     inputMode = InputMode.waitForStart;
   }
 
   void _nextLevel() {
+    if (level >= config.maxLevel) {
+      _gameOver();
+      return;
+    }
     level++;
-    // Remove old level, load new one
+    _removeAllExtraBalls();
+    ballTrail.clear();
+    _clearActivePowerUps();
+    brannasActive = false;
+
     currentLevel.removeFromParent();
     currentLevel = Level(levelNumber: level);
     add(currentLevel);
 
-    // Reset ball
-    ball.reset();
-    ball.placeOnPaddle(paddle);
+    mainBall.reset();
+    mainBall.placeOnPaddle(paddle);
     inputMode = InputMode.waitForStart;
   }
 
   void _gameOver() {
     inputMode = InputMode.gameOver;
+    _removeAllExtraBalls();
+    ballTrail.clear();
+    _clearActivePowerUps();
+    mainBall.reset();
     audioManager.play('game_over');
+    pauseEngine();
     overlays.add('gameOver');
   }
 
@@ -186,8 +215,9 @@ class PoesArkanoidGame extends FlameGame
 
   /// Called by [Ball] when it falls below the screen.
   void onBallLost(Ball lostBall) {
-    if (lostBall.isExtraBall) {
+    if (lostBall.isExtra) {
       lostBall.removeFromParent();
+      balls.remove(lostBall);
     } else {
       loseLife();
     }
@@ -233,10 +263,29 @@ class PoesArkanoidGame extends FlameGame
     audioManager.playForPowerUp(puType);
   }
 
+  // ------------------------------------------------------------------
+  // Helpers
+  // ------------------------------------------------------------------
   void _spawnExtraBall() {
     final extra = Ball(isExtra: true);
-    extra.position = ball.position.clone();
-    extra.launch(angleOffset: 0.785); // 45 degrees offset
+    extra.position = mainBall.position.clone();
+    extra.launch(angleOffset: 0.785);
+    extra.setDuration(config.powerUpDuration);
+    balls.add(extra);
     add(extra);
+  }
+
+  void _removeAllExtraBalls() {
+    for (final b in balls.where((b) => b.isExtra).toList()) {
+      b.removeFromParent();
+      balls.remove(b);
+    }
+  }
+
+  void _clearActivePowerUps() {
+    for (final pu in activePowerUps) {
+      pu.removeFromParent();
+    }
+    activePowerUps.clear();
   }
 }

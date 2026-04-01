@@ -27,13 +27,13 @@ class PowerUpItem extends SpriteComponent
     _config = getPowerUpConfig(type);
 
     final spriteKey = _config?.spriteKey ?? type.toLowerCase();
-    final imagePath = 'images/items/$spriteKey.png';
+    final imagePath = 'items/$spriteKey.png';
 
     try {
       sprite = Sprite(game.images.fromCache(imagePath));
     } catch (_) {
       // If image not found, use a fallback
-      sprite = Sprite(game.images.fromCache('images/items/coin_gold.png'));
+      sprite = Sprite(game.images.fromCache('items/coin_gold.png'));
     }
 
     add(RectangleHitbox());
@@ -53,8 +53,8 @@ class PowerUpItem extends SpriteComponent
   }
 
   @override
-  void onCollisionStart(Set<Vector2> points, PositionComponent other) {
-    super.onCollisionStart(points, other);
+  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollisionStart(intersectionPoints, other);
 
     if (other is Paddle) {
       game.collectPowerUp(this);

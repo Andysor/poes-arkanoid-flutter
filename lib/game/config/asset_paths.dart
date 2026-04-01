@@ -1,4 +1,7 @@
 /// Centralised asset path definitions mirroring assets.js from the web version.
+///
+/// Flame's image loader uses paths relative to `assets/images/`, so paths
+/// here should NOT include the `images/` prefix.
 library;
 
 class AssetPaths {
@@ -8,48 +11,47 @@ class AssetPaths {
   // Character sprites
   // -------------------------------------------------------------------------
   static const characters = <String, String>{
-    'SAFlag': 'images/characters/saflag.png',
-    'Springbok': 'images/characters/springbok.png',
-    'Voortrekker': 'images/characters/voortrekker.png',
-    'Braai': 'images/characters/braai.png',
-    'RugbyBall': 'images/characters/rugbyball.png',
+    'SAFlag': 'characters/saflag.png',
+    'Springbok': 'characters/springbok.png',
+    'Voortrekker': 'characters/voortrekker.png',
+    'Braai': 'characters/braai.png',
+    'RugbyBall': 'characters/rugbyball.png',
   };
 
   // -------------------------------------------------------------------------
   // Game item sprites
   // -------------------------------------------------------------------------
   static const items = <String, String>{
-    'sausage': 'images/items/sausage.png',
-    'coin_gold': 'images/items/coin_gold.png',
-    'coin_silver': 'images/items/coin_silver.png',
-    'brannas': 'images/items/brannas.png',
-    'ball': 'images/items/ball.png',
-    'extraball': 'images/items/extra_ball.png',
-    'paddle_main': 'images/items/paddle_main.png',
-    'powerup_largepaddle': 'images/items/powerup_largepaddle.png',
-    'powerup_smallpaddle': 'images/items/powerup_smallpaddle.png',
-    'extra_life': 'images/items/extra_life.png',
-    'skull': 'images/items/skull.png',
+    'sausage': 'items/sausage.png',
+    'coin_gold': 'items/coin_gold.png',
+    'coin_silver': 'items/coin_silver.png',
+    'brannas': 'items/brannas.png',
+    'ball': 'items/ball.png',
+    'extraball': 'items/extra_ball.png',
+    'paddle_main': 'items/paddle_main.png',
+    'powerup_largepaddle': 'items/powerup_largepaddle.png',
+    'powerup_smallpaddle': 'items/powerup_smallpaddle.png',
+    'extra_life': 'items/extra_life.png',
+    'skull': 'items/skull.png',
   };
 
   // -------------------------------------------------------------------------
   // Brick sprites
   // -------------------------------------------------------------------------
   static const bricks = <String, String>{
-    'brick_normal': 'images/bricks/brick_normal.png',
-    'brick_special': 'images/bricks/brick_special.png',
-    'brick_sausage': 'images/bricks/brick_sausage.png',
-    'brick_extra': 'images/bricks/brick_extra.png',
-    'brick_glass': 'images/bricks/brick_glass.png',
-    'brick_glass_broken': 'images/bricks/brick_glass_broken.png',
+    'brick_normal': 'bricks/brick_normal.png',
+    'brick_special': 'bricks/brick_special.png',
+    'brick_sausage': 'bricks/brick_sausage.png',
+    'brick_extra': 'bricks/brick_extra.png',
+    'brick_glass': 'bricks/brick_glass.png',
+    'brick_glass_broken': 'bricks/brick_glass_broken.png',
   };
 
   /// Level background image path by level number.
   /// Extensions vary (.jpg, .png, .jpeg) – we try them in order.
   static const levelBackgroundExtensions = ['.jpg', '.png', '.jpeg'];
 
-  static String levelBackground(int levelNum) =>
-      'images/levels/level$levelNum';
+  static String levelBackground(int levelNum) => 'levels/level$levelNum';
 
   // -------------------------------------------------------------------------
   // Audio files (m4a format – native friendly)
@@ -64,7 +66,7 @@ class AssetPaths {
     'extra_life': 'audio/extra_life.m4a',
     'coin_silver': 'audio/coin_silver.m4a',
     'coin_gold': 'audio/coin_gold.m4a',
-    'game_over': 'audio/game_over1.m4a',
+    'game_over': 'audio/game_over.m4a',
   };
 
   // -------------------------------------------------------------------------

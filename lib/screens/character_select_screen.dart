@@ -5,7 +5,8 @@ import '../game/config/asset_paths.dart';
 /// Character selection screen.
 ///
 /// Shows the 5 SA-themed characters for the player to pick.
-class CharacterSelectScreen extends StatelessWidget {
+/// Precaches images on first build to avoid visible loading delay.
+class CharacterSelectScreen extends StatefulWidget {
   const CharacterSelectScreen({
     super.key,
     required this.playerName,
@@ -15,6 +16,11 @@ class CharacterSelectScreen extends StatelessWidget {
   final String playerName;
   final void Function(String characterKey) onCharacterSelected;
 
+  @override
+  State<CharacterSelectScreen> createState() => _CharacterSelectScreenState();
+}
+
+class _CharacterSelectScreenState extends State<CharacterSelectScreen> {
   static const _characterLabels = <String, String>{
     'SAFlag': 'SA Flag',
     'Springbok': 'Springbok',
@@ -22,6 +28,19 @@ class CharacterSelectScreen extends StatelessWidget {
     'Braai': 'Braai',
     'RugbyBall': 'Rugby Ball',
   };
+
+  bool _precached = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_precached) {
+      _precached = true;
+      for (final path in AssetPaths.characters.values) {
+        precacheImage(AssetImage('assets/images/$path'), context);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +51,7 @@ class CharacterSelectScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Welcome, $playerName!',
+              'Welcome, ${widget.playerName}!',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 24,
@@ -51,9 +70,9 @@ class CharacterSelectScreen extends StatelessWidget {
               alignment: WrapAlignment.center,
               children: AssetPaths.characters.entries.map((entry) {
                 return _CharacterOption(
-                  assetPath: 'assets/${entry.value}',
+                  assetPath: 'assets/images/${entry.value}',
                   label: _characterLabels[entry.key] ?? entry.key,
-                  onTap: () => onCharacterSelected(entry.key),
+                  onTap: () => widget.onCharacterSelected(entry.key),
                 );
               }).toList(),
             ),

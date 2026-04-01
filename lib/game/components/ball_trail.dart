@@ -2,76 +2,73 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 
-import '../poes_arkanoid_game.dart';
-
-/// Particle-based ball trail effect.
+/// Canvas-based ball trail effect.
 ///
-/// Spawns small fading circles behind the ball.
-/// Uses Flame's [CircleComponent] for each particle.
-class BallTrail extends Component with HasGameReference<PoesArkanoidGame> {
-  BallTrail({
-    this.trailColor = const Color(0xFFF58A42), // orange for main ball
-    this.maxParticles = 15,
-    this.particleLifetime = 0.25, // seconds
-  });
+/// Uses plain data objects instead of Flame components for particles.
+/// Single render() call draws all particles — no scene graph overhead.
+class BallTrail extends Component {
+  static const int _maxParticles = 20;
+  static const double _particleLifetime = 0.25;
+  static const int _spawnInterval = 3; // spawn every Nth frame
 
-  final Color trailColor;
-  final int maxParticles;
-  final double particleLifetime;
+  final List<_Particle> _particles = [];
+  int _frameCount = 0;
 
-  final List<_TrailParticle> _particles = [];
-
-  /// Call each frame with the ball's current position and radius.
+  /// Call from the game loop with the ball's current position and radius.
   void addParticle(Vector2 pos, double radius) {
-    final p = _TrailParticle(
-      position: pos.clone(),
-      radius: radius * 0.8,
-      color: trailColor,
-      lifetime: particleLifetime,
-    );
-    _particles.add(p);
-    add(p);
+    _frameCount++;
+    if (_frameCount % _spawnInterval != 0) return;
 
-    // Remove oldest if over limit
-    if (_particles.length > maxParticles) {
-      final oldest = _particles.removeAt(0);
-      oldest.removeFromParent();
+    if (_particles.length >= _maxParticles) {
+      _particles.removeAt(0);
+    }
+    _particles.add(_Particle(
+      x: pos.x,
+      y: pos.y,
+      radius: radius * 0.8,
+      life: _particleLifetime,
+    ));
+  }
+
+  @override
+  void update(double dt) {
+    _particles.removeWhere((p) {
+      p.elapsed += dt;
+      return p.elapsed >= p.life;
+    });
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final paint = Paint();
+    for (final p in _particles) {
+      final t = (p.elapsed / p.life).clamp(0.0, 1.0);
+      paint.color = const Color.fromRGBO(245, 138, 66, 1.0)
+          .withValues(alpha: (1.0 - t) * 0.5);
+      canvas.drawCircle(
+        Offset(p.x, p.y),
+        p.radius * (1.0 - t * 0.5),
+        paint,
+      );
     }
   }
 
   void clear() {
-    for (final p in _particles) {
-      p.removeFromParent();
-    }
     _particles.clear();
   }
 }
 
-class _TrailParticle extends CircleComponent {
-  _TrailParticle({
-    required Vector2 position,
-    required double radius,
-    required Color color,
-    required this.lifetime,
-  }) : super(
-          position: position,
-          radius: radius,
-          anchor: Anchor.center,
-          paint: Paint()..color = color,
-        );
+class _Particle {
+  _Particle({
+    required this.x,
+    required this.y,
+    required this.radius,
+    required this.life,
+  });
 
-  final double lifetime;
-  double _elapsed = 0;
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    _elapsed += dt;
-    final t = (_elapsed / lifetime).clamp(0.0, 1.0);
-    paint.color = paint.color.withValues(alpha: (1.0 - t) * 0.5);
-
-    if (_elapsed >= lifetime) {
-      removeFromParent();
-    }
-  }
+  final double x;
+  final double y;
+  final double radius;
+  final double life;
+  double elapsed = 0;
 }

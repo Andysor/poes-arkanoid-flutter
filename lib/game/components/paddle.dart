@@ -30,7 +30,7 @@ class Paddle extends SpriteComponent
   // ------------------------------------------------------------------
   @override
   Future<void> onLoad() async {
-    sprite = Sprite(game.images.fromCache('images/items/paddle_main.png'));
+    sprite = Sprite(game.images.fromCache('items/paddle_main.png'));
 
     baseWidth = game.size.x * config.paddleWidthFraction;
     final h = game.size.y * config.paddleHeightFraction;
@@ -70,7 +70,7 @@ class Paddle extends SpriteComponent
     if (_powerUpTimer > 0) {
       _powerUpTimer -= dt;
       if (_powerUpTimer <= 0) {
-        _resetSize();
+        resetSize();
       }
     }
 
@@ -105,7 +105,7 @@ class Paddle extends SpriteComponent
     _powerUpTimer = config.powerUpDuration;
   }
 
-  void _resetSize() {
+  void resetSize() {
     size.x = baseWidth;
     isExtended = false;
     isShrunk = false;

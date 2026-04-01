@@ -112,6 +112,7 @@ class BrickComponent extends SpriteComponent
   }
 
   void _destroy() {
+    game.currentLevel.onBrickDestroyed();
     removeFromParent();
   }
 }

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../poes_arkanoid_game.dart';
 import '../config/game_config.dart' as config;
+import '../config/asset_paths.dart';
 import '../config/powerup_config.dart';
 import 'brick.dart';
 
@@ -16,21 +17,29 @@ class Level extends Component with HasGameReference<PoesArkanoidGame> {
   final int levelNumber;
 
   final List<BrickComponent> _bricks = [];
+  int _remainingBricks = 0;
 
   late double brickWidth;
   late double brickHeight;
   late double _offsetLeft;
   late double _offsetTop;
 
-  bool get isComplete => _bricks.every((b) => !b.isMounted);
+  bool get isComplete => _remainingBricks <= 0;
+
+  void onBrickDestroyed() {
+    _remainingBricks--;
+  }
 
   // ------------------------------------------------------------------
   // Lifecycle
   // ------------------------------------------------------------------
   @override
   Future<void> onLoad() async {
-    await _calculateDimensions();
-    await _loadLevel();
+    _calculateDimensions();
+    await Future.wait([
+      _loadBackground(),
+      _loadLevel(),
+    ]);
   }
 
   void _calculateDimensions() {
@@ -41,6 +50,28 @@ class Level extends Component with HasGameReference<PoesArkanoidGame> {
     brickHeight = brickWidth; // 1:1 aspect ratio
     _offsetLeft = (game.size.x - totalWidth) / 2;
     _offsetTop = game.size.y * config.brickOffsetTopFraction;
+  }
+
+  // ------------------------------------------------------------------
+  // Background
+  // ------------------------------------------------------------------
+  Future<void> _loadBackground() async {
+    final basePath = AssetPaths.levelBackground(levelNumber);
+    for (final ext in AssetPaths.levelBackgroundExtensions) {
+      final path = '$basePath$ext';
+      try {
+        final img = await game.images.load(path);
+        final bg = SpriteComponent(
+          sprite: Sprite(img),
+          size: game.size,
+          priority: -1,
+        );
+        add(bg);
+        return;
+      } catch (_) {
+        // Try next extension
+      }
+    }
   }
 
   // ------------------------------------------------------------------
@@ -99,6 +130,8 @@ class Level extends Component with HasGameReference<PoesArkanoidGame> {
       }
     }
 
+    _remainingBricks = _bricks.length;
+
     // Distribute power-ups across bricks (glass bricks weighted 3x)
     _distributePowerUps(normalBricks, glassBricks);
   }
@@ -120,6 +153,7 @@ class Level extends Component with HasGameReference<PoesArkanoidGame> {
         add(brick);
       }
     }
+    _remainingBricks = _bricks.length;
   }
 
   // ------------------------------------------------------------------

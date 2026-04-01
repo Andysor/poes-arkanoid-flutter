@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "108944813654",
+    "project_id": "poes-game",
+    "storage_bucket": "poes-game.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:108944813654:android:2b729bedba854b712d95f7",
+        "android_client_info": {
+          "package_name": "com.example.poes_arkanoid"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXvGmK3hBWjdfWRwXT4kCWduYnU5b5V-8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

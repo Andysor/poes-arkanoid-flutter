@@ -7,6 +7,7 @@ import '../poes_arkanoid_game.dart';
 import '../config/game_config.dart' as config;
 import 'paddle.dart';
 import 'brick.dart';
+import 'power_up.dart';
 
 /// The ball component.
 ///
@@ -46,8 +47,8 @@ class Ball extends SpriteComponent
   @override
   Future<void> onLoad() async {
     final imageName = isExtra
-        ? 'images/items/extra_ball.png'
-        : 'images/items/ball.png';
+        ? 'items/extra_ball.png'
+        : 'items/ball.png';
     sprite = Sprite(game.images.fromCache(imageName));
 
     final radius = game.size.x * config.ballRadiusFraction;
@@ -104,6 +105,9 @@ class Ball extends SpriteComponent
     // Move
     position += velocity * dt;
 
+    // Trail particles
+    game.ballTrail.addParticle(position, size.x / 2);
+
     // Track extra ball lifetime
     if (isExtra && _duration > 0) {
       _elapsed += dt;
@@ -127,8 +131,8 @@ class Ball extends SpriteComponent
   // Collision callbacks (Flame collision system)
   // ------------------------------------------------------------------
   @override
-  void onCollisionStart(Set<Vector2> points, PositionComponent other) {
-    super.onCollisionStart(points, other);
+  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollisionStart(intersectionPoints, other);
 
     if (other is Paddle) {
       _handlePaddleCollision(other);
